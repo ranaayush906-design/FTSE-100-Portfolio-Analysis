@@ -62,10 +62,11 @@ FTSE-100-Portfolio-Analysis/
 ├── README.md
 └── charts/
     ├── stock_performance.png
-    ├── portfolio_performance.png
     ├── portfolio_drawdown.png
     ├── correlation_matrix.png
     └── portfolio_vs_ftse100.png
+    ├── portfolio_performance.png
+    ```
 
 Methodology
 Historical adjusted price data is downloaded using Yahoo Finance.
