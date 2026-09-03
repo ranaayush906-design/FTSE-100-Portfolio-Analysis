@@ -62,18 +62,48 @@ FTSE-100-Portfolio-Analysis/
 ├── README.md
 └── charts/
     ├── stock_performance.png
+    ├── portfolio_performance.png
     ├── portfolio_drawdown.png
     ├── correlation_matrix.png
     └── portfolio_vs_ftse100.png
-    ├── portfolio_performance.png
-    ```
+```
 
-Methodology
+## Methodology
+
 Historical adjusted price data is downloaded using Yahoo Finance.
+
 Daily returns are calculated using percentage changes in adjusted prices.
+
 Portfolio returns are calculated using equal 25% weights across the four stocks.
+
 Annualised volatility is calculated using the standard deviation of daily returns multiplied by the square root of 252 trading days.
+
 The Sharpe ratio is calculated using a 0% risk-free rate.
+
 Portfolio performance is compared with the FTSE 100 index using the same £10,000 starting investment.
-Disclaimer
+
+## Visualisations
+
+### Stock Performance
+
+![Stock Performance](charts/stock_performance.png)
+
+### Portfolio Performance
+
+![Portfolio Performance](charts/portfolio_performance.png)
+
+### Portfolio vs FTSE 100
+
+![Portfolio vs FTSE 100](charts/portfolio_vs_ftse100.png)
+
+### Portfolio Drawdown
+
+![Portfolio Drawdown](charts/portfolio_drawdown.png)
+
+### Correlation Matrix
+
+![Correlation Matrix](charts/correlation_matrix.png)
+
+## Disclaimer
+
 This project is for educational and portfolio demonstration purposes only and does not constitute investment advice.
