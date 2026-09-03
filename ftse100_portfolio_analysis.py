@@ -4,9 +4,9 @@ import yfinance as yf
 from pathlib import Path
 
 
-# ==========================================
-# 1. Project Setup
-# ==========================================
+# ============================================================
+# 1. SETTINGS
+# ============================================================
 
 INITIAL_INVESTMENT = 10_000
 TRADING_DAYS = 252
@@ -17,23 +17,29 @@ WEIGHTS = {
     "AZN.L": 0.25,
     "HSBA.L": 0.25,
     "SHEL.L": 0.25,
-    "ULVR.L": 0.25
+    "ULVR.L": 0.25,
 }
 
 START_DATE = "2021-01-01"
 END_DATE = "2026-01-01"
 
+
+# ============================================================
+# 2. FILE PATHS
+# ============================================================
+
 BASE_DIR = Path(__file__).resolve().parent
 CHARTS_DIR = BASE_DIR / "charts"
+
 CHARTS_DIR.mkdir(parents=True, exist_ok=True)
 
+
+# ============================================================
+# 3. DOWNLOAD STOCK DATA
+# ============================================================
+
 print("FTSE 100 Portfolio Analysis")
-print("=" * 40)
-
-
-# ==========================================
-# 2. Download Stock Data
-# ==========================================
+print("=" * 50)
 
 data = yf.download(
     TICKERS,
@@ -48,102 +54,115 @@ if data.empty:
 
 prices = data["Close"]
 
-# Make sure all required tickers exist
-missing_tickers = [ticker for ticker in TICKERS if ticker not in prices.columns]
+missing_tickers = [
+    ticker for ticker in TICKERS
+    if ticker not in prices.columns
+]
 
 if missing_tickers:
-    raise ValueError(f"Missing stock data for: {missing_tickers}")
+    raise ValueError(
+        f"Missing stock data for: {missing_tickers}"
+    )
 
 prices = prices[TICKERS]
 
 
-# ==========================================
-# 3. Calculate Daily Returns
-# ==========================================
+# ============================================================
+# 4. CALCULATE DAILY RETURNS
+# ============================================================
 
 returns = prices.pct_change().dropna()
 
 
-# ==========================================
-# 4. Individual Stock Performance
-# ==========================================
+# ============================================================
+# 5. INDIVIDUAL STOCK PERFORMANCE
+# ============================================================
 
 average_daily_returns = returns.mean()
 daily_volatility = returns.std()
 
-annualised_returns = average_daily_returns * TRADING_DAYS
-annualised_volatility = daily_volatility * (TRADING_DAYS ** 0.5)
+annualised_returns = (
+    average_daily_returns * TRADING_DAYS
+)
 
-print("\nAnnualised Returns (%):")
-print((annualised_returns * 100).round(2))
+annualised_volatility = (
+    daily_volatility * (TRADING_DAYS ** 0.5)
+)
 
-print("\nAnnualised Volatility (%):")
-print((annualised_volatility * 100).round(2))
+stock_summary = pd.DataFrame({
+    "Annual Return (%)": annualised_returns * 100,
+    "Annual Volatility (%)": annualised_volatility * 100
+}).round(2)
+
+print("\nStock Performance Summary")
+print("-" * 50)
+print(stock_summary)
 
 
-# ==========================================
-# 5. Portfolio Construction
-# ==========================================
+# ============================================================
+# 6. BUILD EQUAL-WEIGHT PORTFOLIO
+# ============================================================
 
 weights = pd.Series(WEIGHTS)
 
-total_weight = weights.sum()
-
-if abs(total_weight - 1) > 0.0001:
+if abs(weights.sum() - 1) > 0.0001:
     raise ValueError("Portfolio weights must add up to 1.")
 
-portfolio_returns = (returns * weights).sum(axis=1)
+portfolio_returns = (
+    returns * weights
+).sum(axis=1)
 
-portfolio_average_daily_return = portfolio_returns.mean()
-portfolio_daily_volatility = portfolio_returns.std()
+
+# ============================================================
+# 7. PORTFOLIO RETURN AND VOLATILITY
+# ============================================================
+
+portfolio_average_daily_return = (
+    portfolio_returns.mean()
+)
+
+portfolio_daily_volatility = (
+    portfolio_returns.std()
+)
 
 portfolio_annual_return = (
     portfolio_average_daily_return * TRADING_DAYS
 )
 
 portfolio_annual_volatility = (
-    portfolio_daily_volatility * (TRADING_DAYS ** 0.5)
+    portfolio_daily_volatility
+    * (TRADING_DAYS ** 0.5)
 )
 
-print("\nTotal Portfolio Weight:")
-print(round(total_weight, 2))
 
-print("\nPortfolio Annualised Return:")
-print(f"{portfolio_annual_return * 100:.2f} %")
+# ============================================================
+# 8. PORTFOLIO VALUE
+# ============================================================
 
-print("\nPortfolio Annualised Volatility:")
-print(f"{portfolio_annual_volatility * 100:.2f} %")
-
-
-# ==========================================
-# 6. Correlation Analysis
-# ==========================================
-
-correlation_matrix = returns.corr()
-
-print("\nCorrelation Matrix:")
-print(correlation_matrix.round(2))
-
-
-# ==========================================
-# 7. Portfolio Growth
-# ==========================================
-
-portfolio_growth = (1 + portfolio_returns).cumprod()
+portfolio_growth = (
+    1 + portfolio_returns
+).cumprod()
 
 portfolio_value = (
     portfolio_growth * INITIAL_INVESTMENT
 )
 
-final_portfolio_value = portfolio_value.iloc[-1]
-
-total_portfolio_return = (
-    final_portfolio_value / INITIAL_INVESTMENT - 1
+final_portfolio_value = (
+    portfolio_value.iloc[-1]
 )
 
-# CAGR based on actual investment period
+total_portfolio_return = (
+    final_portfolio_value / INITIAL_INVESTMENT
+) - 1
+
+
+# ============================================================
+# 9. CAGR
+# ============================================================
+
 number_of_years = (
-    portfolio_value.index[-1] - portfolio_value.index[0]
+    portfolio_value.index[-1]
+    - portfolio_value.index[0]
 ).days / 365.25
 
 portfolio_cagr = (
@@ -151,9 +170,9 @@ portfolio_cagr = (
 ) ** (1 / number_of_years) - 1
 
 
-# ==========================================
-# 8. Sharpe Ratio
-# ==========================================
+# ============================================================
+# 10. SHARPE RATIO
+# ============================================================
 
 risk_free_rate = 0
 
@@ -163,9 +182,9 @@ portfolio_sharpe_ratio = (
 )
 
 
-# ==========================================
-# 9. Maximum Drawdown
-# ==========================================
+# ============================================================
+# 11. MAXIMUM DRAWDOWN
+# ============================================================
 
 running_max = portfolio_value.cummax()
 
@@ -176,13 +195,25 @@ drawdown = (
 maximum_drawdown = drawdown.min()
 
 
-# ==========================================
-# 10. Stock Performance Chart
-# ==========================================
+# ============================================================
+# 12. CORRELATION MATRIX
+# ============================================================
+
+correlation_matrix = returns.corr()
+
+print("\nCorrelation Matrix")
+print("-" * 50)
+print(correlation_matrix.round(2))
+
+
+# ============================================================
+# 13. CHART 1 — STOCK PERFORMANCE
+# ============================================================
 
 plt.figure(figsize=(12, 6))
 
 for ticker in TICKERS:
+
     stock_growth = (
         prices[ticker] / prices[ticker].iloc[0]
     )
@@ -209,9 +240,9 @@ plt.savefig(
 plt.close()
 
 
-# ==========================================
-# 11. Portfolio Performance Chart
-# ==========================================
+# ============================================================
+# 14. CHART 2 — PORTFOLIO PERFORMANCE
+# ============================================================
 
 plt.figure(figsize=(12, 6))
 
@@ -243,9 +274,9 @@ plt.savefig(
 plt.close()
 
 
-# ==========================================
-# 12. Portfolio Drawdown Chart
-# ==========================================
+# ============================================================
+# 15. CHART 3 — PORTFOLIO DRAWDOWN
+# ============================================================
 
 plt.figure(figsize=(12, 6))
 
@@ -269,9 +300,9 @@ plt.savefig(
 plt.close()
 
 
-# ==========================================
-# 13. Correlation Matrix Heatmap
-# ==========================================
+# ============================================================
+# 16. CHART 4 — CORRELATION MATRIX
+# ============================================================
 
 plt.figure(figsize=(8, 6))
 
@@ -280,7 +311,9 @@ plt.imshow(
     interpolation="nearest"
 )
 
-plt.colorbar(label="Correlation")
+plt.colorbar(
+    label="Correlation"
+)
 
 plt.xticks(
     range(len(TICKERS)),
@@ -295,7 +328,9 @@ plt.yticks(
 plt.title("Stock Return Correlation Matrix")
 
 for i in range(len(TICKERS)):
+
     for j in range(len(TICKERS)):
+
         plt.text(
             j,
             i,
@@ -315,9 +350,9 @@ plt.savefig(
 plt.close()
 
 
-# ==========================================
-# 14. Download FTSE 100 Benchmark
-# ==========================================
+# ============================================================
+# 17. DOWNLOAD FTSE 100 BENCHMARK
+# ============================================================
 
 benchmark = yf.download(
     "^FTSE",
@@ -328,17 +363,32 @@ benchmark = yf.download(
 )
 
 if benchmark.empty:
-    raise ValueError("FTSE 100 benchmark data could not be downloaded.")
+    raise ValueError(
+        "FTSE 100 benchmark data could not be downloaded."
+    )
 
 benchmark_prices = benchmark["Close"]
 
-# Handle possible DataFrame format
-if isinstance(benchmark_prices, pd.DataFrame):
-    benchmark_prices = benchmark_prices.iloc[:, 0]
+if isinstance(
+    benchmark_prices,
+    pd.DataFrame
+):
+
+    benchmark_prices = (
+        benchmark_prices.iloc[:, 0]
+    )
 
 benchmark_prices = benchmark_prices.dropna()
 
-benchmark_returns = benchmark_prices.pct_change().dropna()
+
+# ============================================================
+# 18. CALCULATE BENCHMARK RETURNS
+# ============================================================
+
+benchmark_returns = (
+    benchmark_prices.pct_change()
+    .dropna()
+)
 
 benchmark_growth = (
     1 + benchmark_returns
@@ -349,9 +399,9 @@ benchmark_value = (
 )
 
 
-# ==========================================
-# 15. Align Portfolio and Benchmark
-# ==========================================
+# ============================================================
+# 19. ALIGN PORTFOLIO AND BENCHMARK
+# ============================================================
 
 comparison = pd.concat(
     [
@@ -361,29 +411,28 @@ comparison = pd.concat(
     axis=1
 ).dropna()
 
-# Rebase both investments to £10,000
 comparison = (
     comparison / comparison.iloc[0]
 ) * INITIAL_INVESTMENT
 
 
-# ==========================================
-# 16. Benchmark Comparison
-# ==========================================
+# ============================================================
+# 20. BENCHMARK PERFORMANCE
+# ============================================================
 
-final_benchmark_value = comparison["FTSE 100"].iloc[-1]
+final_benchmark_value = (
+    comparison["FTSE 100"].iloc[-1]
+)
 
 portfolio_benchmark_return = (
     comparison["Portfolio"].iloc[-1]
     / INITIAL_INVESTMENT
-    - 1
-)
+) - 1
 
 ftse_total_return = (
     final_benchmark_value
     / INITIAL_INVESTMENT
-    - 1
-)
+) - 1
 
 benchmark_outperformance = (
     portfolio_benchmark_return
@@ -391,9 +440,9 @@ benchmark_outperformance = (
 )
 
 
-# ==========================================
-# 17. Portfolio vs FTSE 100 Chart
-# ==========================================
+# ============================================================
+# 21. CHART 5 — PORTFOLIO VS FTSE 100
+# ============================================================
 
 plt.figure(figsize=(12, 6))
 
@@ -425,24 +474,9 @@ plt.savefig(
 plt.close()
 
 
-# ==========================================
-# 18. Stock Summary Table
-# ==========================================
-
-summary = pd.DataFrame({
-    "Annual Return (%)": annualised_returns * 100,
-    "Annual Volatility (%)": annualised_volatility * 100
-})
-
-summary = summary.round(2)
-
-print("\nStock Performance Summary:")
-print(summary)
-
-
-# ==========================================
-# 19. Final Results
-# ==========================================
+# ============================================================
+# 22. FINAL RESULTS
+# ============================================================
 
 print("\n")
 print("=" * 50)
@@ -501,7 +535,8 @@ print(
 
 print(
     f"Portfolio vs FTSE 100: "
-    f"{benchmark_outperformance * 100:.2f} percentage points"
+    f"{benchmark_outperformance * 100:.2f} "
+    f"percentage points"
 )
 
 print("\nCharts saved to:")
